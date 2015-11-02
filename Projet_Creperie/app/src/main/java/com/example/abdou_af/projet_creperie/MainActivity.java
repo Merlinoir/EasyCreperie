@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    public void Cuisine(View v) {
+    public void cuisine(View v) {
         Intent intent = new Intent(this, CuisineActivity.class);
         startActivity(intent);
     }
