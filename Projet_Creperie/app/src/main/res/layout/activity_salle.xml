@@ -52,7 +52,4 @@
             android:id="@+id/liste" />
     </ScrollView>
 
-
-
-
 </LinearLayout>
