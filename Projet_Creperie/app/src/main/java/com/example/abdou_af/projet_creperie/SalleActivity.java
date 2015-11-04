@@ -7,10 +7,12 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,24 +21,34 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class SalleActivity extends AppCompatActivity {
+public class SalleActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
 
-    private final static String STATE_CHATLOG = "STATE_CHATLOG";
-
-    private TextView liste;
-    private ScrollView scroll;
     private ListView listeview;
-
+    private TextView recapCommande;
 
     ArrayList<String> tabliste = new ArrayList<String>();
+    ArrayList<String> tabliste2 = new ArrayList<String>();
 
     private PrintWriter writer= new PrintWriter(System.out, true);
     private BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
+    ArrayAdapter adapter;
+
     private ReadMessages readMessages;
 
+    private Socket socket;
 
-    private String chatLog = "";
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+        writer.println("COMMANDE " + tabliste2.get(position));
+        refreshQuantite();
+        Toast toast = Toast.makeText(getApplicationContext(), ("Plats " + tabliste2.get(position)+" commandé"), Toast.LENGTH_SHORT);
+        toast.show();
+        recapCommande.setText(tabliste2.get(position) + "\n");
+        adapter.notifyDataSetChanged();
+    }
 
     private class StartNetwork extends AsyncTask<Void, Void, Boolean> {
         @Override
@@ -47,9 +59,8 @@ public class SalleActivity extends AppCompatActivity {
         @Override
         protected Boolean doInBackground(Void... v) {
             System.out.println("StartNetwork.doInBackground");
-                try {
-                    System.out.println("Testouille1");
-                Socket socket = new Socket("10.0.2.2", 7777);
+            try {
+                socket = new Socket("10.0.2.2", 7777);
                 writer = new PrintWriter(socket.getOutputStream(), true);
                 reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 System.out.println("connexion au serveur ok");
@@ -65,8 +76,9 @@ public class SalleActivity extends AppCompatActivity {
                 //displayMessage("Connected to server\n");
                 readMessages = new ReadMessages();
                 readMessages.execute();
+                writer.println("QUANTITE");
             } else {
-                displayMessage("Could not connect to server\n");
+                //displayMessage("Could not connect to server\n");
             }
         }
     }
@@ -79,13 +91,16 @@ public class SalleActivity extends AppCompatActivity {
 
                 try {
                     message = reader.readLine();
-                    if(!(message.equals("FINLISTE"))&& !(message.contains("de chacun des plats")) ){
+                    if(!(message.equals("FINLISTE"))&& !(message.contains("de chacun des plats")) && !(message.contains("Plat")) ){
 
                         String libelle = message;
-                         message = libelle +"    quantité: " + reader.readLine();
+                        message = libelle +"    quantité: " + reader.readLine();
 
                         tabliste.add(message);
+                        tabliste2.add(libelle);
+                        adapter.notifyDataSetChanged();
                         libelle = "";
+
                     }
                     //publishProgress(message);
                 } catch (IOException e) {
@@ -98,25 +113,9 @@ public class SalleActivity extends AppCompatActivity {
 
         @Override
         protected void onProgressUpdate(String... messages) {
-            displayMessage(messages[0] + "\n");
+            //displayMessage(messages[0] + "\n");
+            System.out.println("Execution méthode onProgressUpdate");
         }
-    }
-
-    private void displayMessage(String message) {
-        // On ajoute ce message a l'ensemble du chat
-        chatLog += message;
-        // On affiche le chat
-        liste.setText(chatLog);
-        // On scrolle en bas pour visualiser le dernier message
-        scroll.fullScroll(View.FOCUS_DOWN);
-
-    }
-
-
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putString(STATE_CHATLOG, chatLog);
-        super.onSaveInstanceState(savedInstanceState);
     }
 
     @Override
@@ -124,9 +123,14 @@ public class SalleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_salle);
 
-        liste = (TextView) findViewById(R.id.liste);
-        scroll = (ScrollView) findViewById(R.id.scroll);
+        adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
+
         listeview = (ListView) findViewById(R.id.listView);
+        recapCommande = (TextView) findViewById(R.id.recapCommande);
+
+        listeview.setOnItemClickListener(this);
+
+        System.out.println("Dans create");
     }
 
 
@@ -134,6 +138,7 @@ public class SalleActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         new StartNetwork().execute();
+        System.out.println("Dans onstart");
     }
 
     @Override
@@ -159,11 +164,18 @@ public class SalleActivity extends AppCompatActivity {
     }
 
     public void quantite(View v) {
-        chatLog="";
         tabliste.clear();
         writer.println("QUANTITE");
         ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
         listeview.setAdapter(adapter);
+        System.out.println("Appel méthode askForQuantite");
+    }
+
+    public void refreshQuantite(){
+        tabliste.clear();
+        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
+        listeview.setAdapter(adapter);
+        System.out.println("Appel méthode refreshQuantite");
     }
 
 
@@ -171,7 +183,12 @@ public class SalleActivity extends AppCompatActivity {
         Intent intent = new Intent(this, MainActivity.class);
         writer.println("LOGOUT");
         readMessages.cancel(true);
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         startActivity(intent);
-        finish();
+        //finish();
     }
 }
