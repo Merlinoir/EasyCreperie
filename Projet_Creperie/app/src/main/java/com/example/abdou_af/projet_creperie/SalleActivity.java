@@ -25,18 +25,143 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
 
     private ListView listeview;
     private TextView recapCommande;
-
-    ArrayList<String> tabliste = new ArrayList<String>();
-    ArrayList<String> tabliste2 = new ArrayList<String>();
+    private TextView titreRecapCommande;
 
     private PrintWriter writer= new PrintWriter(System.out, true);
     private BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
     ArrayAdapter adapter;
 
+    private Socket socket;
+
     private ReadMessages readMessages;
 
-    private Socket socket;
+    ArrayList<String> tabliste = new ArrayList<String>();
+    private final static String SAVE_TABLISTE = "SAVE_TABLISTE";
+
+    ArrayList<String> tabliste2 = new ArrayList<String>();
+    private final static String SAVE_TABLISTE2 = "SAVE_TABLISTE2";
+
+    String textRecapCommande = "";
+    private final static String TEXT_RECAP_COMMANDE = "TEXT_RECAP_COMMANDE";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        System.out.println("Dans create");
+
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_salle);
+
+        adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
+
+        listeview = (ListView) findViewById(R.id.listView);
+        recapCommande = (TextView) findViewById(R.id.recapCommande);
+        titreRecapCommande = (TextView) findViewById(R.id.titreRecapCommande);
+        titreRecapCommande.setVisibility(View.INVISIBLE);
+
+        listeview.setOnItemClickListener(this);
+
+        if(savedInstanceState != null){
+
+            tabliste = savedInstanceState.getStringArrayList(SAVE_TABLISTE);
+            tabliste2 = savedInstanceState.getStringArrayList(SAVE_TABLISTE2);
+            tabliste.clear();
+            ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
+            listeview.setAdapter(adapter);
+
+            textRecapCommande = savedInstanceState.getString(TEXT_RECAP_COMMANDE);
+            System.out.println("Valeur de textRecapCommande aprés rotation = " + textRecapCommande );
+            if(!(textRecapCommande=="")){
+                titreRecapCommande.setVisibility(View.VISIBLE);
+                recapCommande.setText(textRecapCommande);
+            }
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState){
+        System.out.println("Dans onSaveInstanceState");
+
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putStringArrayList(SAVE_TABLISTE, tabliste);
+        savedInstanceState.putStringArrayList(SAVE_TABLISTE2,tabliste2);
+        savedInstanceState.putString(TEXT_RECAP_COMMANDE, textRecapCommande);
+    }
+
+
+    @Override
+    protected void onStart() {
+        System.out.println("Dans onstart");
+
+        super.onStart();
+        new StartNetwork().execute();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        System.out.println("SalleActivity.onResume");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        System.out.println("SalleActivity.onRestart");
+    }
+
+    @Override
+    protected void onPause() {
+        System.out.println("SalleActivity.onPause");
+        super.onPause();
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        System.out.println("SalleActivity.onStop");
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        System.out.println("SalleActivity.onDestroy");
+        super.onDestroy();
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_salle, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void refreshQuantite(){
+        System.out.println("Appel méthode refreshQuantite");
+        writer.println("QUANTITE");
+        tabliste.clear();
+        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
+        listeview.setAdapter(adapter);
+    }
 
 
     @Override
@@ -46,9 +171,37 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
         refreshQuantite();
         Toast toast = Toast.makeText(getApplicationContext(), ("Plats " + tabliste2.get(position)+" commandé"), Toast.LENGTH_SHORT);
         toast.show();
-        recapCommande.setText(tabliste2.get(position) + "\n");
-        adapter.notifyDataSetChanged();
+
+        textRecapCommande += (tabliste2.get(position)+ "\n") ;
+        titreRecapCommande.setVisibility(View.VISIBLE);
+        recapCommande.setText(textRecapCommande);
+
     }
+
+    //------------------------ Methode appelée sur appui boutton------------------------------------
+    public void quantite(View v) {
+        System.out.println("Appel méthode askForQuantite");
+
+        tabliste.clear();
+        writer.println("QUANTITE");
+        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
+        listeview.setAdapter(adapter);
+    }
+
+    public void logout(View v) {
+        Intent intent = new Intent(this, MainActivity.class);
+        writer.println("LOGOUT");
+        readMessages.cancel(true);
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        startActivity(intent);
+        finish();
+    }
+
+    //----------------------------------- threads secondaires----------------------------------------------
 
     private class StartNetwork extends AsyncTask<Void, Void, Boolean> {
         @Override
@@ -72,6 +225,7 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
         }
         @Override
         protected void onPostExecute(Boolean b) {
+            System.out.println("StartNetwork.onPostExecute");
             if (b) {
                 //displayMessage("Connected to server\n");
                 readMessages = new ReadMessages();
@@ -96,13 +250,12 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
                         String libelle = message;
                         message = libelle +"    quantité: " + reader.readLine();
 
-                        tabliste.add(message);
-                        tabliste2.add(libelle);
-                        adapter.notifyDataSetChanged();
+                        if(!(message.contains("quantité: 0"))){
+                            tabliste.add(message);
+                            tabliste2.add(libelle);
+                        }
                         libelle = "";
-
                     }
-                    //publishProgress(message);
                 } catch (IOException e) {
                     System.out.println("pb writer ou reader POUR LISTE");
                     break;
@@ -113,82 +266,7 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
 
         @Override
         protected void onProgressUpdate(String... messages) {
-            //displayMessage(messages[0] + "\n");
             System.out.println("Execution méthode onProgressUpdate");
         }
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_salle);
-
-        adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
-
-        listeview = (ListView) findViewById(R.id.listView);
-        recapCommande = (TextView) findViewById(R.id.recapCommande);
-
-        listeview.setOnItemClickListener(this);
-
-        System.out.println("Dans create");
-    }
-
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        new StartNetwork().execute();
-        System.out.println("Dans onstart");
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_salle, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    public void quantite(View v) {
-        tabliste.clear();
-        writer.println("QUANTITE");
-        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
-        listeview.setAdapter(adapter);
-        System.out.println("Appel méthode askForQuantite");
-    }
-
-    public void refreshQuantite(){
-        tabliste.clear();
-        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
-        listeview.setAdapter(adapter);
-        System.out.println("Appel méthode refreshQuantite");
-    }
-
-
-    public void logout(View v) {
-        Intent intent = new Intent(this, MainActivity.class);
-        writer.println("LOGOUT");
-        readMessages.cancel(true);
-        try {
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        startActivity(intent);
-        //finish();
     }
 }

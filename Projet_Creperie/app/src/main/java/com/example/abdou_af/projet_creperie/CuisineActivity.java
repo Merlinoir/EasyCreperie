@@ -10,13 +10,9 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.ScrollView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -34,6 +30,8 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
     private EditText quantiteRecette;
 
     ArrayList<Recette> tabRecettes = new ArrayList<>();
+
+    RecetteAdapter adapter;
 
     private PrintWriter writer= new PrintWriter(System.out, true);
     private BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
@@ -134,13 +132,12 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
 
     public void create(View view) {
         askForAjout(nomRecette.getText().toString(), quantiteRecette.getText().toString());
-        cmdButton.performClick();
     }
 
     public void askForQuantite(){
         tabRecettes.clear();
         writer.println("QUANTITE");
-        RecetteAdapter adapter = new RecetteAdapter(this, tabRecettes);
+        adapter = new RecetteAdapter(this, tabRecettes);
         //Ecoute des évènements sur votre liste
         adapter.addListener(this);
         listeview.setAdapter(adapter);
@@ -148,7 +145,7 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
 
     public void askForAjout(String nom, String quantite){
         writer.println("AJOUT " + quantite + " " + nom);
-        cmdButton.performClick();
+       askForQuantite();
     }
 
     public void logout(View v) {
@@ -190,6 +187,7 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
                 //displayMessage("Connected to server\n");
                 readMessages = new ReadMessages();
                 readMessages.execute();
+                askForQuantite();
             } else {
                 System.out.println("Could not connect to server");
             }
@@ -200,23 +198,23 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
         @Override
         protected Void doInBackground(Void... v) {
             while (!isCancelled()) {
-                parseQuantiteResult();
+                parseServerAnswer();
             }
             return null;
         }
 
-        public void parseQuantiteResult(){
+        public void parseServerAnswer(){
             try {
                 String message = reader.readLine();
-                if(!(message.equals("FINLISTE"))&& !(message.contains("de chacun des plats")) && !(message.contains("Plat")) ){
-
+                if((message.equals("FINLISTE")) || (message.contains("de chacun des plats")) || (message.contains("Plat")) || (message.contains("Le plat")) ) {
+                    //DO NOTHING
+                }else{
                     String libellePlat = message;
                     String quantitePlat = reader.readLine();
-
                     tabRecettes.add(new Recette(libellePlat, quantitePlat));
                 }
             } catch (IOException e) {
-                System.out.println("pb writer ou reader POUR LISTE");
+                System.out.println("pb writer ou reader parseServerAnswer");
             }
         }
 

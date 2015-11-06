@@ -10,8 +10,6 @@
     tools:context=".SalleActivity"
     android:orientation="vertical">
 
-
-
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -46,6 +44,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="Recap Commande:"
+        android:id="@+id/titreRecapCommande"
         android:background="@android:drawable/title_bar"
         android:textStyle="bold"
         android:textColor="#333eff" />
