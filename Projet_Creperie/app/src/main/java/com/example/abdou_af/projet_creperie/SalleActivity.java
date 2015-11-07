@@ -10,7 +10,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,23 +22,23 @@ import java.util.ArrayList;
 
 public class SalleActivity extends AppCompatActivity implements AdapterView.OnItemClickListener {
 
-    private ListView listeview;
+    private ListView affListePlatDispo;
     private TextView recapCommande;
     private TextView titreRecapCommande;
 
     private PrintWriter writer= new PrintWriter(System.out, true);
     private BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-    ArrayAdapter adapter;
+    ArrayAdapter adapter;  //
 
     private Socket socket;
 
     private ReadMessages readMessages;
 
-    ArrayList<String> tabliste = new ArrayList<String>();
+    ArrayList<String> tabLibPlatQuantite = new ArrayList<String>();
     private final static String SAVE_TABLISTE = "SAVE_TABLISTE";
 
-    ArrayList<String> tabliste2 = new ArrayList<String>();
+    ArrayList<String> tabLibPlats = new ArrayList<String>();
     private final static String SAVE_TABLISTE2 = "SAVE_TABLISTE2";
 
     String textRecapCommande = "";
@@ -52,23 +51,27 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_salle);
 
-        adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
+        adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabLibPlatQuantite);
 
-        listeview = (ListView) findViewById(R.id.listView);
+        affListePlatDispo = (ListView) findViewById(R.id.listView);
         recapCommande = (TextView) findViewById(R.id.recapCommande);
         titreRecapCommande = (TextView) findViewById(R.id.titreRecapCommande);
         titreRecapCommande.setVisibility(View.INVISIBLE);
 
-        listeview.setOnItemClickListener(this);
+        // affectation listener pour chaque item de la Listview
+        affListePlatDispo.setOnItemClickListener(this);
 
+        //persistance des données (lors rotation tablette) Maj variables et affichage avec données sauvegardées
         if(savedInstanceState != null){
 
-            tabliste = savedInstanceState.getStringArrayList(SAVE_TABLISTE);
-            tabliste2 = savedInstanceState.getStringArrayList(SAVE_TABLISTE2);
-            tabliste.clear();
-            ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
-            listeview.setAdapter(adapter);
+            // Maj zone commande
+            tabLibPlatQuantite = savedInstanceState.getStringArrayList(SAVE_TABLISTE);
+            tabLibPlats = savedInstanceState.getStringArrayList(SAVE_TABLISTE2);
+            tabLibPlatQuantite.clear();
+            ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabLibPlatQuantite);
+            affListePlatDispo.setAdapter(adapter);
 
+            // Maj zone Recap Commande
             textRecapCommande = savedInstanceState.getString(TEXT_RECAP_COMMANDE);
             System.out.println("Valeur de textRecapCommande aprés rotation = " + textRecapCommande );
             if(!(textRecapCommande=="")){
@@ -78,13 +81,14 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
         }
     }
 
+    // sauvegarde données dans bundle (persistance) lors rotation tablette
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState){
         System.out.println("Dans onSaveInstanceState");
 
         super.onSaveInstanceState(savedInstanceState);
-        savedInstanceState.putStringArrayList(SAVE_TABLISTE, tabliste);
-        savedInstanceState.putStringArrayList(SAVE_TABLISTE2,tabliste2);
+        savedInstanceState.putStringArrayList(SAVE_TABLISTE, tabLibPlatQuantite);
+        savedInstanceState.putStringArrayList(SAVE_TABLISTE2,tabLibPlats);
         savedInstanceState.putString(TEXT_RECAP_COMMANDE, textRecapCommande);
     }
 
@@ -155,39 +159,43 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
         return super.onOptionsItemSelected(item);
     }
 
+    // Maj liste plat dipo dans listView (zone commande)
     public void refreshQuantite(){
         System.out.println("Appel méthode refreshQuantite");
         writer.println("QUANTITE");
-        tabliste.clear();
-        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
-        listeview.setAdapter(adapter);
+        tabLibPlatQuantite.clear();
+        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabLibPlatQuantite);
+        affListePlatDispo.setAdapter(adapter);
     }
 
-
+    // action sur click d'un item de la listview (zone commande)
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-        writer.println("COMMANDE " + tabliste2.get(position));
+        writer.println("COMMANDE " + tabLibPlats.get(position));
         refreshQuantite();
-        Toast toast = Toast.makeText(getApplicationContext(), ("Plats " + tabliste2.get(position)+" commandé"), Toast.LENGTH_SHORT);
-        toast.show();
+        Toast toast = Toast.makeText(getApplicationContext(), ("Plats " + tabLibPlats.get(position)+" commandé"), Toast.LENGTH_SHORT);
+        toast.show(); // dans version 2 sera dans ReadMessages et sur reception message serveur commande ok
 
-        textRecapCommande += (tabliste2.get(position)+ "\n") ;
+        textRecapCommande += (tabLibPlats.get(position)+ "\n") ;
         titreRecapCommande.setVisibility(View.VISIBLE);
         recapCommande.setText(textRecapCommande);
 
     }
 
     //------------------------ Methode appelée sur appui boutton------------------------------------
-    public void quantite(View v) {
-        System.out.println("Appel méthode askForQuantite");
 
-        tabliste.clear();
+    // Maj listview plats dispo (zone commande) par appui bp
+    public void quantite(View v) {
+        System.out.println("Appel méthode quantite");
+
+        tabLibPlatQuantite.clear();
         writer.println("QUANTITE");
-        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabliste);
-        listeview.setAdapter(adapter);
+        ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabLibPlatQuantite);
+        affListePlatDispo.setAdapter(adapter);
     }
 
+    // deconnexion du serveur et retour sur page acceuil
     public void logout(View v) {
         Intent intent = new Intent(this, MainActivity.class);
         writer.println("LOGOUT");
@@ -231,9 +239,7 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
                 readMessages = new ReadMessages();
                 readMessages.execute();
                 writer.println("QUANTITE");
-            } else {
-                //displayMessage("Could not connect to server\n");
-            }
+            } 
         }
     }
 
@@ -251,8 +257,8 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
                         message = libelle +"    quantité: " + reader.readLine();
 
                         if(!(message.contains("quantité: 0"))){
-                            tabliste.add(message);
-                            tabliste2.add(libelle);
+                            tabLibPlatQuantite.add(message);
+                            tabLibPlats.add(libelle);
                         }
                         libelle = "";
                     }

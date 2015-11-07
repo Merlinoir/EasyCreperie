@@ -127,6 +127,7 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
     }
 
     public void quantite(View v) {
+
         askForQuantite();
     }
 

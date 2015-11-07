@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 android:orientation="vertical" android:layout_width="fill_parent"
 android:layout_height="fill_parent"
+    android:background="@drawable/fond_ecran"
     android:weightSum="1">
     <Button
     android:layout_width="wrap_content"
