@@ -77,7 +77,7 @@ public class RecetteAdapter  extends BaseAdapter {
         }
 
 
-        //On mémorise la position de la "Personne" dans le composant textview
+        //On mémorise la position de la "Recette" dans le composant textview
         recette_Nom.setTag(position);
         //On ajoute un listener
         recette_Nom.setOnClickListener(new View.OnClickListener() {
@@ -99,7 +99,7 @@ public class RecetteAdapter  extends BaseAdapter {
     }
 
     /**
-     * Interface pour écouter les évènements sur le nom d'une personne
+     * Interface pour écouter les évènements sur le nom d'une recette
      */
     public interface RecetteAdapterListener {
 

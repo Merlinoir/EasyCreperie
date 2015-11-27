@@ -30,6 +30,7 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
     private EditText quantiteRecette;
 
     ArrayList<Recette> tabRecettes = new ArrayList<>();
+    private final static String SAVE_TABRECETTE = "SAVE_TABRECETTE";
 
     RecetteAdapter adapter;
 
@@ -50,8 +51,62 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
 
         nomRecette = (EditText) findViewById(R.id.editTextNom);
         quantiteRecette = (EditText) findViewById(R.id.editTextQuantite);
+
+        if(savedInstanceState != null){
+            tabRecettes = savedInstanceState.getParcelableArrayList(SAVE_TABRECETTE);
+            adapter = new RecetteAdapter(this, tabRecettes);
+            adapter.addListener(this);
+            listeview.setAdapter(adapter);
+        }
+
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putParcelableArrayList(SAVE_TABRECETTE, tabRecettes);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        new StartNetwork().execute();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        System.out.println("CuisineActivity.onResume");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        System.out.println("CuisineActivity.onRestart");
+    }
+
+    @Override
+    protected void onPause() {
+        System.out.println("CuisineActivity.onPause");
+        super.onPause();
+        try {
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        System.out.println("CuisineActivity.onStop");
+        super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        System.out.println("CuisineActivity.onDestroy");
+        super.onDestroy();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -74,12 +129,6 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
 
         return super.onOptionsItemSelected(item);
     }
-
-//    @Override
-//    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//
-//
-//    }
 
     @Override
     public void onClickRecette(final Recette item, int position) {
@@ -107,6 +156,10 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
                 EditText quantite = (EditText) alertDialogView.findViewById(R.id.EditText1);
 
                 //j'ajoute la quantité saisie au stock des recettes
+                //Si l'utilisateur ne saisi rien je set la quantité à 1
+                if (quantite.getText().toString().isEmpty()){
+                    quantite.setText("1");
+                }
                 askForAjout(item.getNomRecette(), quantite.getText().toString());
 
                 //On affiche dans un Toast le texte contenu dans l'EditText de notre AlertDialog
@@ -120,19 +173,45 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
         adb.show();
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        new StartNetwork().execute();
+    public void alertSaisie(){
+        //On instancie notre layout en tant que View
+        LayoutInflater factory = LayoutInflater.from(this);
+        View alertDialogView = null;
+
+        //Je verifie quel champ n'est pas rempli
+        if(nomRecette.getText().toString().isEmpty()){
+            alertDialogView = factory.inflate(R.layout.alertdialog_verification_nom, null);
+        } else if(quantiteRecette.getText().toString().isEmpty()){
+            alertDialogView = factory.inflate(R.layout.alertdialog_verification_quantite, null);
+        }
+
+        //Création de l'AlertDialog
+        AlertDialog.Builder adb = new AlertDialog.Builder(this);
+
+        //On affecte la vue personnalisé que l'on a crée à notre AlertDialog
+        adb.setView(alertDialogView);
+
+        //On donne un titre à l'AlertDialog
+        adb.setTitle("Donnée manquante !");
+
+        //On modifie l'icône de l'AlertDialog pour le fun ;)
+        adb.setIcon(android.R.drawable.ic_dialog_alert);
+
+        //On affecte un bouton "OK" à notre AlertDialog et on lui affecte un évènement
+        adb.setPositiveButton("OK", null);
+        adb.show();
     }
 
     public void quantite(View v) {
-
         askForQuantite();
     }
 
     public void create(View view) {
-        askForAjout(nomRecette.getText().toString(), quantiteRecette.getText().toString());
+        if(nomRecette.getText().toString().isEmpty() || quantiteRecette.getText().toString().isEmpty()){
+            alertSaisie();
+        } else {
+            askForAjout(nomRecette.getText().toString(), quantiteRecette.getText().toString());
+        }
     }
 
     public void askForQuantite(){
@@ -199,24 +278,21 @@ public class CuisineActivity extends AppCompatActivity  implements RecetteAdapte
         @Override
         protected Void doInBackground(Void... v) {
             while (!isCancelled()) {
-                parseServerAnswer();
+                try {
+                    String message = reader.readLine();
+                    if((message.equals("FINLISTE")) || (message.contains("de chacun des plats")) || (message.contains("Plat")) || (message.contains("Le plat")) ) {
+                        //DO NOTHING
+                    }else{
+                        String libellePlat = message;
+                        String quantitePlat = reader.readLine();
+                        tabRecettes.add(new Recette(libellePlat, quantitePlat));
+                    }
+                } catch (IOException e) {
+                    System.out.println("pb writer ou reader parseServerAnswer");
+                    break;
+                }
             }
             return null;
-        }
-
-        public void parseServerAnswer(){
-            try {
-                String message = reader.readLine();
-                if((message.equals("FINLISTE")) || (message.contains("de chacun des plats")) || (message.contains("Plat")) || (message.contains("Le plat")) ) {
-                    //DO NOTHING
-                }else{
-                    String libellePlat = message;
-                    String quantitePlat = reader.readLine();
-                    tabRecettes.add(new Recette(libellePlat, quantitePlat));
-                }
-            } catch (IOException e) {
-                System.out.println("pb writer ou reader parseServerAnswer");
-            }
         }
 
         @Override
