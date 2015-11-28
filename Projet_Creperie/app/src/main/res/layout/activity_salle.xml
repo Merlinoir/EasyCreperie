@@ -17,7 +17,8 @@
         android:layout_gravity="right"
         android:text="LOGOUT"
         android:onClick="logout"
-        android:id="@+id/buttonLOGOUT"/>
+        android:id="@+id/buttonLOGOUT"
+        style="@style/Base.Widget.AppCompat.Button.Colored" />
 
     <LinearLayout
         android:orientation="horizontal"
@@ -29,7 +30,8 @@
             android:layout_height="wrap_content"
             android:text="PLATS DISPONIBLES A LA COMMANDE"
             android:onClick="quantite"
-            android:id="@+id/cmd_liste"/>
+            android:id="@+id/cmd_liste"
+            style="@style/Widget.AppCompat.Button.Colored" />
 
     </LinearLayout>
 
@@ -44,11 +46,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="Recap Commande:"
+        android:text="Recapulatif de la  Commande:"
         android:id="@+id/titreRecapCommande"
-        android:background="@android:drawable/title_bar"
+        android:background="#00000000"
         android:textStyle="bold"
-        android:textColor="#333eff" />
+        android:textColor="#008C90"
+        style="@style/Base.Widget.AppCompat.Button.Colored" />
 
 
 

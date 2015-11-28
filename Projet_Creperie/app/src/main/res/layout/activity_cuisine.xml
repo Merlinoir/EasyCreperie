@@ -10,7 +10,8 @@ android:layout_height="fill_parent"
     android:layout_gravity="right"
     android:text="LOGOUT"
     android:onClick="logout"
-    android:id="@+id/buttonLOGOUT"/>
+    android:id="@+id/buttonLOGOUT"
+        style="@style/Base.Widget.AppCompat.Button.Colored" />
 
     <LinearLayout
     android:orientation="horizontal"
@@ -21,7 +22,8 @@ android:layout_height="fill_parent"
         android:layout_height="wrap_content"
         android:text="DISPONIBILITE / REAPPROVISIONNER"
         android:onClick="quantite"
-        android:id="@+id/cmd_liste"/>
+        android:id="@+id/cmd_liste"
+            style="@style/Base.Widget.AppCompat.Button.Colored" />
     </LinearLayout>
 
     <ListView android:id="@+id/listView"
@@ -67,6 +69,7 @@ android:layout_height="fill_parent"
         android:text="CREATE"
         android:id="@+id/buttonCreate"
         android:onClick="create"
-        android:layout_gravity="center_horizontal" />
+        android:layout_gravity="center_horizontal"
+        style="@style/Widget.AppCompat.Button.Colored" />
 
 </LinearLayout>

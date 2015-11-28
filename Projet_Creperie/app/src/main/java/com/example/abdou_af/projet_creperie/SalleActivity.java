@@ -162,8 +162,8 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
     // Maj liste plat dipo dans listView (zone commande)
     public void refreshQuantite(){
         System.out.println("Appel méthode refreshQuantite");
-        writer.println("QUANTITE");
         tabLibPlatQuantite.clear();
+        writer.println("QUANTITE");
         ArrayAdapter adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, tabLibPlatQuantite);
         affListePlatDispo.setAdapter(adapter);
     }
@@ -172,14 +172,21 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-        writer.println("COMMANDE " + tabLibPlats.get(position));
-        refreshQuantite();
-        Toast toast = Toast.makeText(getApplicationContext(), ("Plats " + tabLibPlats.get(position)+" commandé"), Toast.LENGTH_SHORT);
-        toast.show(); // dans version 2 sera dans ReadMessages et sur reception message serveur commande ok
+        // Si la quantité n'est pas 0 je fais une commande sinon j'informe l'utilisateur via un Toast
+        if (!(tabLibPlatQuantite.get(position).contains("quantité: 0"))){
+            writer.println("COMMANDE " + tabLibPlats.get(position));
+            refreshQuantite();
+            Toast toast = Toast.makeText(getApplicationContext(), ("Plats " + tabLibPlats.get(position)+" commandé"), Toast.LENGTH_SHORT);
+            toast.show(); // dans version 2 sera dans ReadMessages et sur reception message serveur commande ok
 
-        textRecapCommande += (tabLibPlats.get(position)+ "\n") ;
-        titreRecapCommande.setVisibility(View.VISIBLE);
-        recapCommande.setText(textRecapCommande);
+            textRecapCommande += (tabLibPlats.get(position)+ "\n") ;
+            titreRecapCommande.setVisibility(View.VISIBLE);
+            recapCommande.setText(textRecapCommande);
+        } else {
+            Toast toast = Toast.makeText(getApplicationContext(), ("Plats " + tabLibPlats.get(position)+" non disponible !"), Toast.LENGTH_SHORT);
+            toast.show();
+        }
+
 
     }
 
@@ -239,7 +246,7 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
                 readMessages = new ReadMessages();
                 readMessages.execute();
                 writer.println("QUANTITE");
-            } 
+            }
         }
     }
 
@@ -256,10 +263,10 @@ public class SalleActivity extends AppCompatActivity implements AdapterView.OnIt
                         String libelle = message;
                         message = libelle +"    quantité: " + reader.readLine();
 
-                        if(!(message.contains("quantité: 0"))){
+//                        if(!(message.contains("quantité: 0"))){
                             tabLibPlatQuantite.add(message);
                             tabLibPlats.add(libelle);
-                        }
+//                        }
                         libelle = "";
                     }
                 } catch (IOException e) {

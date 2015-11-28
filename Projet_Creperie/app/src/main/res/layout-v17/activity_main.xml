@@ -77,5 +77,4 @@
         style="@style/Base.Widget.AppCompat.Button.Colored"
         android:textSize="18dp" />
 
-
 </RelativeLayout>
